@@ -12,8 +12,4 @@
     <Product>AlphaChiTech.VirtualizingCollection</Product>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="WindowsBase" Version="4.6.1055" />
-  </ItemGroup>
-
 </Project>

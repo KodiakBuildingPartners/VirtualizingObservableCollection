@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Threading;
 using AlphaChiTech.Virtualization.Pageing;
 using AlphaChiTech.VirtualizingCollection;
 using AlphaChiTech.VirtualizingCollection.Interfaces;
@@ -163,9 +162,10 @@ namespace AlphaChiTech.Virtualization
 
         protected VirtualizingObservableCollection()
         {
-            //To enable reset in case that noone set UiThreadExcecuteAction
+            // If no one set the UiThreadExcecuteAction, we have to run actions on whatever thread we happen to be on.
+            // We definitely CANNOT pull in a platform-specific implementation -- that would break other platforms...
             if (VirtualizationManager.Instance.UiThreadExcecuteAction == null)
-                VirtualizationManager.Instance.UiThreadExcecuteAction = a => Dispatcher.CurrentDispatcher.Invoke(a);
+                VirtualizationManager.Instance.UiThreadExcecuteAction = action => action();
         }
 
         #endregion Ctors Etc
@@ -633,21 +633,9 @@ namespace AlphaChiTech.Virtualization
             {
                 var handler = (NotifyCollectionChangedEventHandler) @delegate;
 
-                // If the subscriber is a DispatcherObject and different thread.
-                var dispatcherObject = handler.Target as DispatcherObject;
                 try
                 {
-                    if (dispatcherObject != null && !dispatcherObject.CheckAccess())
-                    {
-                        // Invoke handler in the target dispatcher's thread... 
-                        // asynchronously for better responsiveness.
-                        dispatcherObject.Dispatcher.BeginInvoke(DispatcherPriority.DataBind, handler, this, args);
-                    }
-                    else
-                    {
-                        // Execute handler as is.
-                        handler(this, args);
-                    }
+                    handler(this, args);
                 }
                 catch (Exception ex
                 ) //WTF? exception catch during remove operations with collection, try add and remove investigation
